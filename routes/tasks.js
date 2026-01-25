@@ -1,77 +1,110 @@
+// routes/tasks.js
 const express = require('express');
 const router = express.Router();
-const { getDB, ObjectId } = require('../database/mongo');
+const { mongoose } = require('../database/mongo');
 
-const collectionName = 'tasks';
+// Схема задачи
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  status: {
+    type: String,
+    enum: ['pending', 'in-progress', 'done'],
+    default: 'pending'
+  },
+  createdAt: { type: Date, default: Date.now }
+});
 
-// GET /api/tasks — все задачи с фильтром и сортировкой
+const Task = mongoose.model('Task', taskSchema);
+
+// GET /api/tasks - список всех задач
 router.get('/', async (req, res) => {
-    try {
-        const db = getDB();
-        let query = {};
-        let sort = {};
-
-        if (req.query.title) query.title = { $regex: req.query.title, $options: 'i' };
-        if (req.query.sortBy) {
-            const parts = req.query.sortBy.split(':'); // пример: sortBy=title:asc
-            sort[parts[0]] = parts[1] === 'desc' ? -1 : 1;
-        }
-
-        const tasks = await db.collection(collectionName).find(query).sort(sort).toArray();
-        res.status(200).json(tasks);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const tasks = await Task.find().sort({ createdAt: -1 });
+    res.json(tasks);
+  } catch (err) {
+    console.error('GET /api/tasks error:', err);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
 });
 
-// GET /api/tasks/:id — получить задачу
+// GET /api/tasks/:id - одна задача по id
 router.get('/:id', async (req, res) => {
-    try {
-        const task = await getDB().collection(collectionName).findOne({ _id: ObjectId(req.params.id) });
-        if (!task) return res.status(404).json({ error: 'Task not found' });
-        res.status(200).json(task);
-    } catch {
-        res.status(400).json({ error: 'Invalid ID' });
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
     }
+    res.json(task);
+  } catch (err) {
+    console.error('GET /api/tasks/:id error:', err);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
 });
 
-// POST /api/tasks — создать задачу
+// POST /api/tasks - создать новую задачу
 router.post('/', async (req, res) => {
-    try {
-        const { title, description } = req.body;
-        if (!title || !description) return res.status(400).json({ error: 'Missing fields' });
-        const result = await getDB().collection(collectionName).insertOne({ title, description });
-        res.status(201).json(result.ops[0]);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+  try {
+    const { title, description, status } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
     }
+
+    const task = new Task({
+      title: title.trim(),
+      description: (description || '').trim(),
+      status: status || 'pending'
+    });
+
+    const saved = await task.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    console.error('POST /api/tasks error:', err);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
 });
 
-// PUT /api/tasks/:id — обновить задачу
+// PUT /api/tasks/:id - обновить задачу
 router.put('/:id', async (req, res) => {
-    try {
-        const { title, description } = req.body;
-        const result = await getDB().collection(collectionName).findOneAndUpdate(
-            { _id: ObjectId(req.params.id) },
-            { $set: { title, description } },
-            { returnDocument: 'after' }
-        );
-        if (!result.value) return res.status(404).json({ error: 'Task not found' });
-        res.status(200).json(result.value);
-    } catch {
-        res.status(400).json({ error: 'Invalid ID' });
+  try {
+    const { title, description, status } = req.body;
+
+    const updated = await Task.findByIdAndUpdate(
+      req.params.id,
+      {
+        title,
+        description,
+        status
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Task not found' });
     }
+
+    res.json(updated);
+  } catch (err) {
+    console.error('PUT /api/tasks/:id error:', err);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
 });
 
-// DELETE /api/tasks/:id — удалить задачу
+// DELETE /api/tasks/:id - удалить задачу
 router.delete('/:id', async (req, res) => {
-    try {
-        const result = await getDB().collection(collectionName).deleteOne({ _id: ObjectId(req.params.id) });
-        if (result.deletedCount === 0) return res.status(404).json({ error: 'Task not found' });
-        res.status(200).json({ message: 'Task deleted' });
-    } catch {
-        res.status(400).json({ error: 'Invalid ID' });
+  try {
+    const deleted = await Task.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Task not found' });
     }
+
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    console.error('DELETE /api/tasks/:id error:', err);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
 });
 
 module.exports = router;
