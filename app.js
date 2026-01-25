@@ -2,9 +2,10 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
+const { connectDB } = require('./database/mongo');
+
 const app = express();
 
-const { connectDB } = require('./database/mongo');
 const tasksRouter = require('./routes/tasks');
 
 // Парсинг тела запросов
