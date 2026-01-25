@@ -1,7 +1,6 @@
 # WebT Assignment 3 – Part 2  
-**Student:** Ibraev Ansar  
-**Course:** Web Technologies  
-**Project:** Task Manager (Full-Stack CRUD App)
+**Ibrayev Ansar**  
+**SE-2424**
 
 ## 1. Project Overview
 
