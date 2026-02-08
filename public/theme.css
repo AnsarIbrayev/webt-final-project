@@ -1,0 +1,74 @@
+:root {
+  --primary-color: #6366f1;
+  --secondary-color: #ec4899;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --light-bg: #f8fafc;
+  --light-text: #1e293b;
+  --light-border: #e2e8f0;
+  --card-bg: #ffffff;
+}
+
+body.theme-dark {
+  --light-bg: #0f172a;
+  --light-text: #f1f5f9;
+  --light-border: #334155;
+  --card-bg: #1e293b;
+}
+
+body {
+  background-color: var(--light-bg);
+  color: var(--light-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.card {
+  border: 1px solid var(--light-border);
+  background-color: var(--card-bg);
+  color: var(--light-text);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.form-control, .form-select {
+  background-color: var(--card-bg);
+  color: var(--light-text);
+  border-color: var(--light-border);
+}
+
+.table-light { background-color: var(--card-bg) !important; border-color: var(--light-border) !important; }
+.table, .table th, .table td { color: var(--light-text) !important; }
+
+.header-section { background: transparent; color: var(--light-text); padding: 1rem 0.5rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--light-border); }
+.controls-bar { display:flex; gap:1rem; align-items:center }
+
+.theme-switcher, .lang-switcher { cursor:pointer; background:transparent; border:none; color:var(--light-text); font-size:1.25rem }
+
+.badge-priority-low { background:#6b7280; color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:600 }
+.badge-priority-medium { background:#2563eb; color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:600 }
+.badge-priority-high { background:#ef4444; color:#fff; padding:0.35rem 0.6rem; border-radius:8px; font-weight:600 }
+.badge-status-pending { background:#6b7280; color:#fff; padding:0.35rem 0.6rem; border-radius:8px }
+.badge-status-in-progress { background:#f59e0b; color:#111; padding:0.35rem 0.6rem; border-radius:8px }
+.badge-status-done { background:#10b981; color:#fff; padding:0.35rem 0.6rem; border-radius:8px }
+
+/* Make form labels and placeholders visible in dark mode */
+.form-label, label, .small, .text-muted { color: var(--light-text) !important; opacity:0.9 }
+.form-control::placeholder { color: rgba(255,255,255,0.18); }
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .header-section { padding: 1rem }
+  .controls-bar { gap:0.5rem }
+}
+
+/* subtle fade-in */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px)} to { opacity:1; transform: translateY(0)} }
+.card { animation: fadeIn 0.25s ease-in-out }
