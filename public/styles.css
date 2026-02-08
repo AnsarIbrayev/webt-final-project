@@ -1,0 +1,415 @@
+:root{
+  --bg1:#0b1220;
+  --bg2:#08101c;
+  --card:#111c2f;
+  --card2:#0f1a2c;
+  --border: rgba(255,255,255,0.07);
+  --text:#eaf0ff;
+  --muted: rgba(234,240,255,0.65);
+  --input: rgba(255,255,255,0.06);
+  --input-border: rgba(255,255,255,0.10);
+  --primary:#5b6bff;
+}
+
+/* Light theme overrides when body does NOT have .theme-dark */
+body:not(.theme-dark) {
+  --bg1: #f8fafc;
+  --bg2: #f1f5f9;
+  --card: #ffffff;
+  --card2: #ffffff;
+  --border: #e6eef8;
+  --text: #0f172a;
+  --muted: rgba(15,23,42,0.6);
+  --input: rgba(15,23,42,0.04);
+  --input-border: #e2e8f0;
+  --primary: #4f46e5;
+}
+
+/* Force solid white background for light theme */
+/* Hard overrides for light theme to ensure fully solid white background and readable text */
+html:not(.theme-dark), body:not(.theme-dark), .app-body:not(.theme-dark), .app-shell:not(.theme-dark) {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: var(--text) !important;
+  min-height: 100vh;
+}
+
+/* Make glass cards plain on light theme (remove heavy shadows and gradients) */
+.app-body:not(.theme-dark) .glass-card {
+  background: #ffffff !important;
+  border: 1px solid var(--input-border) !important;
+  box-shadow: none !important;
+}
+
+/* Form controls, table and common UI elements should use theme colors */
+.app-body:not(.theme-dark) .form-control,
+.app-body:not(.theme-dark) .form-select,
+.app-body:not(.theme-dark) .dark-input {
+  background: var(--input) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--input-border) !important;
+}
+
+.app-body:not(.theme-dark) .form-label,
+.app-body:not(.theme-dark) .hint,
+.app-body:not(.theme-dark) .app-subtitle,
+.app-body:not(.theme-dark) .card-title {
+  color: var(--text) !important;
+}
+
+.app-body:not(.theme-dark) .task-table thead th,
+.app-body:not(.theme-dark) .task-table tbody td {
+  color: var(--text) !important;
+}
+
+.app-body:not(.theme-dark) .action-btn {
+  color: var(--text) !important;
+  background: rgba(0,0,0,0.03) !important;
+}
+
+/* Outline buttons color adjustments per theme */
+body:not(.theme-dark) .btn-outline-light {
+  color: #0f172a !important;
+  background: rgba(0,0,0,0.02) !important;
+  border-color: rgba(0,0,0,0.06) !important;
+}
+body.theme-dark .btn-outline-light {
+  color: var(--text) !important;
+  background: rgba(255,255,255,0.03) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Ensure plain .btn also adapts */
+body:not(.theme-dark) .btn { color: #0f172a !important; }
+body.theme-dark .btn { color: var(--text) !important; }
+
+/* Ensure modal content is readable in both themes */
+.app-body:not(.theme-dark) .modal-dark {
+  background: #ffffff !important;
+  color: var(--text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* Ensure login modal text/controls are visible in dark theme */
+.modal-dark {
+  color: var(--text) !important;
+  background: var(--card) !important;
+}
+.modal-dark .form-control,
+.modal-dark .form-select {
+  background: var(--input) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--input-border) !important;
+}
+.modal-dark .form-label,
+.modal-dark .text-muted {
+  color: var(--text) !important;
+}
+.modal-dark .btn,
+.modal-dark .btn-outline-light {
+  color: var(--text) !important;
+}
+.modal-dark .btn-close-white {
+  filter: invert(1) !important;
+}
+
+html,body{ height:100%; }
+.app-body{
+  background: radial-gradient(1000px 700px at 15% 15%, #152544 0%, transparent 55%),
+              radial-gradient(900px 600px at 85% 35%, #1b2a57 0%, transparent 55%),
+              linear-gradient(180deg, var(--bg1), var(--bg2));
+  color: var(--text);
+}
+
+.app-shell{
+  max-width: 1400px;
+}
+
+.app-title{
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.app-subtitle{
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.divider{
+  height: 1px;
+  background: var(--border);
+}
+
+.glass-card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+}
+
+.card-title{
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.form-label{
+  color: var(--text);
+  opacity: 0.95;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.dark-input{
+  background: var(--input) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--text) !important;
+  border-radius: 10px !important;
+}
+
+.dark-input::placeholder{ color: rgba(234,240,255,0.35); }
+.dark-input:focus{
+  box-shadow: 0 0 0 0.2rem rgba(91,107,255,0.25) !important;
+  border-color: rgba(91,107,255,0.45) !important;
+}
+
+.btn-save{
+  background: var(--primary);
+  border-color: rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-weight: 600;
+}
+
+.icon-btn{
+  width: 38px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.icon-btn:hover{
+  background: rgba(255,255,255,0.10);
+}
+
+.icon{ font-size: 16px; }
+
+.task-table{
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent !important;
+}
+
+.task-table thead th{
+  color: var(--text) !important;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border) !important;
+  background: transparent !important;
+}
+
+.task-table tbody td{
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  background: transparent !important;
+  color: var(--text);
+}
+
+/* Disable dark hover/highlight applied by Bootstrap table-hover */
+.task-table.table-hover tbody tr:hover td,
+.table-hover tbody tr:hover td {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Also disable active/selected row background */
+.task-table tbody tr.active td,
+.task-table tbody tr:active td {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Strong overrides for Bootstrap dark table hover */
+.table.table-dark.table-hover tbody tr:hover,
+.table.table-dark.table-hover tbody tr:hover td,
+.table-dark.table-hover tbody tr:hover,
+.table-dark.table-hover tbody tr:hover td,
+.table-hover.table-dark tbody tr:hover,
+.table-hover.table-dark tbody tr:hover td {
+  background-color: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Also override Bootstrap's zebra/striped hover if present */
+.table.table-dark.table-hover.table-striped tbody tr:hover,
+.table-striped.table-dark.table-hover tbody tr:hover {
+  background-color: transparent !important;
+}
+
+/* Extra aggressive reset for any hover background applied to table rows/cells */
+.task-table.table-hover tbody tr:hover,
+.task-table.table-hover tbody tr:hover td,
+.task-table tbody tr:hover,
+.task-table tbody tr:hover td,
+.table.table-hover tbody tr:hover,
+.table.table-hover tbody tr:hover td {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--text) !important;
+}
+
+/* Remove any pseudo-element overlays on hovered rows */
+.task-table tbody tr:hover::before,
+.task-table tbody tr:hover::after {
+  display: none !important;
+  content: none !important;
+}
+
+.pill{
+  display:inline-block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+  color: #08101c;
+}
+
+.pill.gray{ background:#b8c0cc; }
+.pill.yellow{ background:#f5c542; }
+.pill.green{ background:#2ecc71; }
+.pill.red{ background:#ff4d4f; }
+.pill.blue{ background:#2f7bff; }
+
+.action-btn{
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  padding: 6px 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.action-btn:hover{ background: rgba(255,255,255,0.10); }
+.action-btn.danger{ border-color: rgba(255,77,79,0.35); }
+
+.hint{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.hint-dot{
+  width:10px;height:10px;border-radius:999px;
+  background: rgba(91,107,255,0.9);
+  box-shadow: 0 0 0 6px rgba(91,107,255,0.18);
+}
+
+.empty-state{
+  padding: 18px 14px;
+  border: 1px dashed rgba(255,255,255,0.14);
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.modal-dark{
+  background: #0f1a2c;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+/* Strong final overrides to ensure theme visuals are consistent */
+/* Light theme: force all backgrounds white and readable text */
+body:not(.theme-dark) {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-dark) .app-body,
+body:not(.theme-dark) .app-shell {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+body:not(.theme-dark) .dark-input::placeholder {
+  color: rgba(15,23,42,0.35) !important;
+}
+
+/* Dark theme: ensure dark gradient/background when theme-dark is present */
+body.theme-dark {
+  background: linear-gradient(180deg, #071025, #0c1724) !important;
+  color: var(--text) !important;
+}
+
+body.theme-dark .app-body,
+body.theme-dark .app-body,
+body.theme-dark .app-shell {
+  /* keep body-level dark background; remove separate background from app containers */
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* Ensure no leftover shadows/overlays show dark color on light theme */
+body:not(.theme-dark) .glass-card,
+body:not(.theme-dark) .modal-content,
+body:not(.theme-dark) .modal-backdrop {
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Remove any separate background from app wrapper so only body background remains visible */
+.app-body, .app-shell {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* Fix header/icon colors in light theme */
+body:not(.theme-dark) .icon-btn { background: rgba(0,0,0,0.03) !important; color: #0f172a !important; border-color: rgba(0,0,0,0.06) !important; }
+
+/* Ensure full height white background when content short */
+html, body { min-height: 100% !important; }
+/* Ensure root element follows body theme so no white gutters remain */
+html { background: transparent !important; }
+
+/* Make html follow body's theme explicitly */
+body.theme-dark, html.theme-dark, body.theme-dark * {
+  background-attachment: fixed !important;
+}
+
+/* Sync html background with body theme to avoid white edges */
+html.theme-dark, body.theme-dark {
+  background: linear-gradient(180deg, #071025, #0c1724) !important;
+}
+html:not(.theme-dark), body:not(.theme-dark) {
+  background: #ffffff !important;
+}
+
+/* Use a fixed pseudo-element to draw the page background so it always covers viewport */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -9999;
+  background: #ffffff;
+  transition: background 200ms ease-in-out, opacity 200ms ease-in-out;
+}
+body.theme-dark::before {
+  background: linear-gradient(180deg, #071025, #0c1724);
+}
+
+/* Ensure app containers are transparent so pseudo-element shows through */
+.app-shell, .app-body, .container-fluid {
+  background: transparent !important;
+}

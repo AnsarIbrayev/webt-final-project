@@ -1,143 +1,385 @@
-/* Enhanced frontend script: fetch, render, sort/filter, theme + i18n hooks */
-const API_URL = '/api/tasks';
+const API_URL = "/api/tasks";
 
-const taskForm = document.getElementById('task-form');
-const taskIdInput = document.getElementById('task-id');
-const titleInput = document.getElementById('title');
-const descriptionInput = document.getElementById('description');
-const statusInput = document.getElementById('status');
-const priorityInput = document.getElementById('priority');
-const dueDateInput = document.getElementById('dueDate');
-const categoryInput = document.getElementById('category');
-const tagsInput = document.getElementById('tags');
-const cancelEditBtn = document.getElementById('cancel-edit');
-const tableBody = document.getElementById('tasks-table-body');
+const el = (id) => document.getElementById(id);
 
-const sortSelect = document.getElementById('sort-select');
-const filterStatus = document.getElementById('filter-status');
-const filterPriority = document.getElementById('filter-priority');
-const filterCategory = document.getElementById('filter-category');
-const filterTags = document.getElementById('filter-tags');
-const resetFiltersBtn = document.getElementById('reset-filters-btn');
+const taskForm = el("task-form");
+const taskIdInput = el("task-id");
+const titleInput = el("title");
+const descriptionInput = el("description");
+const statusInput = el("status");
+const priorityInput = el("priority");
+const dueDateInput = el("dueDate");
+const categoryInput = el("category");
+const tagsInput = el("tags");
 
-let tasksCache = [];
+const cancelEditBtn = el("cancel-edit");
+const tableBody = el("tasks-table-body");
+const emptyState = el("empty-state");
 
-function priorityBadgeClass(p) {
-    if (p === 'high') return 'badge-priority-high';
-    if (p === 'medium') return 'badge-priority-medium';
-    return 'badge-priority-low';
+// Filters
+const filterSort = el("filter-sort");
+const filterStatus = el("filter-status");
+const filterPriority = el("filter-priority");
+const filterCategory = el("filter-category");
+const filterTags = el("filter-tags");
+const resetFiltersBtn = el("reset-filters");
+
+// Auth UI
+const loginBtn = el("login-btn");
+const logoutBtn = el("logout-btn");
+const doLoginBtn = el("do-login");
+const loginEmail = el("login-email");
+const loginPassword = el("login-password");
+
+const themeToggle = el("theme-toggle");
+const langToggle = el("lang-toggle");
+
+let loginModal = null;
+if (window.bootstrap) loginModal = new bootstrap.Modal(document.getElementById("loginModal"));
+
+let allTasks = [];
+let isLoggedIn = false;
+
+// initialize theme from localStorage (default light). Force light on load to ensure white background.
+localStorage.setItem('theme', 'light');
+document.body.classList.remove('theme-dark');
+// ensure icon reflects state
+updateThemeIcon();
+
+function updateThemeIcon() {
+  if (!themeToggle) return;
+  const icon = themeToggle.querySelector('.icon');
+  if (!icon) return;
+  const isDark = document.body.classList.contains('theme-dark');
+  icon.textContent = isDark ? '🌙' : '☀️';
+  themeToggle.title = isDark ? 'Switch to light' : 'Switch to dark';
 }
 
-function statusBadgeClass(s) {
-    if (s === 'in-progress') return 'badge-status-in-progress';
-    if (s === 'done') return 'badge-status-done';
-    return 'badge-status-pending';
+// set initial icon
+updateThemeIcon();
+
+// ---------- helpers ----------
+function setAuthUI(logged) {
+  isLoggedIn = logged;
+  if (logged) {
+    loginBtn.classList.add("d-none");
+    logoutBtn.classList.remove("d-none");
+  } else {
+    loginBtn.classList.remove("d-none");
+    logoutBtn.classList.add("d-none");
+  }
 }
 
-function renderTasks(list) {
-    tableBody.innerHTML = '';
-    if (!list || list.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="7">No tasks yet.</td></tr>';
-        return;
-    }
+function showLoginModal() {
+  if (loginModal) loginModal.show();
+  else alert("Go to /login (modal not available)");
+}
 
-    list.forEach(task => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${escapeHtml(task.title)}</td>
-            <td><span class="${statusBadgeClass(task.status)}">${capitalize(task.status)}</span></td>
-            <td><span class="${priorityBadgeClass(task.priority)}">${capitalize(task.priority)}</span></td>
-            <td>${task.dueDate || '-'}</td>
-            <td>${escapeHtml(task.category || '')}</td>
-            <td>${escapeHtml((task.tags || []).join(', '))}</td>
-            <td class="text-end">
-                <button class="btn btn-sm btn-outline-secondary edit-btn" data-id="${task._id}">Edit</button>
-                <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${task._id}">Delete</button>
-            </td>
-        `;
-        tableBody.appendChild(tr);
+function formatDate(d) {
+  if (!d) return "-";
+  try {
+    return new Date(d).toISOString().slice(0, 10);
+  } catch {
+    return "-";
+  }
+}
+
+function pillStatus(s) {
+  if (typeof t === 'function') {
+    if (s === "done") return `<span class="pill green">${t('status_done')}</span>`;
+    if (s === "in-progress") return `<span class="pill yellow">${t('status_in_progress')}</span>`;
+    return `<span class="pill gray">${t('status_pending')}</span>`;
+  }
+  if (s === "done") return `<span class="pill green">Done</span>`;
+  if (s === "in-progress") return `<span class="pill yellow">In Progress</span>`;
+  return `<span class="pill gray">Pending</span>`;
+}
+
+function pillPriority(p) {
+  if (typeof t === 'function') {
+    if (p === "high") return `<span class="pill red">${t('priority_high')}</span>`;
+    if (p === "medium") return `<span class="pill blue">${t('priority_medium')}</span>`;
+    return `<span class="pill gray">${t('priority_low')}</span>`;
+  }
+  if (p === "high") return `<span class="pill red">High</span>`;
+  if (p === "medium") return `<span class="pill blue">Medium</span>`;
+  return `<span class="pill gray">Low</span>`;
+}
+
+function normalizeStr(x) {
+  return String(x || "").trim().toLowerCase();
+}
+
+function parseTags(t) {
+  if (Array.isArray(t)) return t.map(String);
+  if (!t) return [];
+  return String(t)
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+async function safeJson(res) {
+  try { return await res.json(); } catch { return null; }
+}
+
+// ---------- auth ----------
+async function checkMe() {
+  // optional endpoint: /me
+  const res = await fetch("/me").catch(() => null);
+  if (!res || !res.ok) {
+    setAuthUI(false);
+    return;
+  }
+  const data = await safeJson(res);
+  setAuthUI(!!data);
+}
+
+loginBtn.addEventListener("click", showLoginModal);
+
+doLoginBtn.addEventListener("click", async () => {
+  const email = loginEmail.value;
+  const password = loginPassword.value;
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
+  });
+
+  if (res.ok) {
+    if (loginModal) loginModal.hide();
+    setAuthUI(true);
+    await loadTasks();
+  } else {
+    alert(typeof t === 'function' ? t('invalid_credentials') : "Invalid credentials");
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await fetch("/logout", { method: "POST" }).catch(() => null);
+  setAuthUI(false);
+});
+
+// ---------- tasks ----------
+async function loadTasks() {
+  const res = await fetch(API_URL);
+  const data = await safeJson(res);
+  allTasks = Array.isArray(data) ? data : [];
+  render();
+}
+
+function applyFilters(tasks) {
+  let out = [...tasks];
+
+  // status
+  const st = filterStatus.value;
+  if (st) out = out.filter(t => t.status === st);
+
+  // priority
+  const pr = filterPriority.value;
+  if (pr) out = out.filter(t => (t.priority || "medium") === pr);
+
+  // category contains
+  const cat = normalizeStr(filterCategory.value);
+  if (cat) out = out.filter(t => normalizeStr(t.category).includes(cat));
+
+  // tags contains
+  const tagQ = normalizeStr(filterTags.value);
+  if (tagQ) {
+    out = out.filter(t => {
+      const tags = parseTags(t.tags).map(normalizeStr);
+      return tags.some(x => x.includes(tagQ));
     });
+  }
+
+  // sorting
+  const sort = filterSort.value;
+  if (sort) {
+    const prRank = (p) => (p === "high" ? 3 : p === "medium" ? 2 : 1);
+    const stRank = (s) => (s === "done" ? 3 : s === "in-progress" ? 2 : 1);
+
+    if (sort === "newest") out.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    else if (sort === "oldest") out.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+    else if (sort === "title_asc") out.sort((a,b) => normalizeStr(a.title).localeCompare(normalizeStr(b.title), undefined, { numeric: true, sensitivity: 'base' }));
+    else if (sort === "title_desc") out.sort((a,b) => normalizeStr(b.title).localeCompare(normalizeStr(a.title), undefined, { numeric: true, sensitivity: 'base' }));
+    else if (sort === "priority_asc") out.sort((a,b) => prRank(a.priority || "medium") - prRank(b.priority || "medium"));
+    else if (sort === "priority_desc") out.sort((a,b) => prRank(b.priority || "medium") - prRank(a.priority || "medium"));
+    else if (sort === "status_asc") out.sort((a,b) => stRank(a.status || "pending") - stRank(b.status || "pending"));
+    else if (sort === "status_desc") out.sort((a,b) => stRank(b.status || "pending") - stRank(a.status || "pending"));
+    else if (sort === "due_asc") out.sort((a,b) => (a.dueDate ? new Date(a.dueDate) : Infinity) - (b.dueDate ? new Date(b.dueDate) : Infinity));
+    else if (sort === "due_desc") out.sort((a,b) => (b.dueDate ? new Date(b.dueDate) : -Infinity) - (a.dueDate ? new Date(a.dueDate) : -Infinity));
+    else if (sort === "category_asc") out.sort((a,b) => normalizeStr(a.category).localeCompare(normalizeStr(b.category)));
+    else if (sort === "category_desc") out.sort((a,b) => normalizeStr(b.category).localeCompare(normalizeStr(a.category)));
+    else if (sort === "tags_count_desc") out.sort((a,b) => parseTags(b.tags).length - parseTags(a.tags).length);
+  }
+
+  return out;
 }
 
-function escapeHtml(s){ if(!s) return ''; return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function capitalize(s){ if(!s) return ''; return s.charAt(0).toUpperCase()+s.slice(1); }
+function render() {
+  const filtered = applyFilters(allTasks);
 
-async function loadTasks(){
-    tableBody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
-    try{
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        tasksCache = Array.isArray(data) ? data : [];
-        applyFiltersAndSort();
-    }catch(e){ console.error(e); tableBody.innerHTML = '<tr><td colspan="7">Error loading tasks.</td></tr>' }
+  tableBody.innerHTML = "";
+  if (!filtered.length) {
+    emptyState.classList.remove("d-none");
+    return;
+  }
+  emptyState.classList.add("d-none");
+
+  filtered.forEach(task => {
+    const tr = document.createElement("tr");
+
+    const tags = parseTags(task.tags).join(", ") || "-";
+    const due = formatDate(task.dueDate);
+
+    tr.innerHTML = `
+      <td class="fw-bold">${task.title}</td>
+      <td>${pillStatus(task.status)}</td>
+      <td>${pillPriority(task.priority || "medium")}</td>
+      <td>${due}</td>
+      <td>${task.category || "general"}</td>
+      <td>${tags}</td>
+      <td class="text-end">
+        <button class="action-btn edit-btn" data-id="${task._id}">${typeof t === 'function' ? t('action_edit') : 'Edit'}</button>
+        <button class="action-btn danger delete-btn ms-2" data-id="${task._id}">${typeof t === 'function' ? t('action_delete') : 'Delete'}</button>
+      </td>
+    `;
+
+    tableBody.appendChild(tr);
+  });
 }
 
-function applyFiltersAndSort(){
-    let list = tasksCache.slice();
-    const st = filterStatus?.value || '';
-    const pr = filterPriority?.value || '';
-    const cat = (filterCategory?.value || '').trim().toLowerCase();
-    const tags = (filterTags?.value || '').trim().toLowerCase();
+// form submit
+taskForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    if (st) list = list.filter(t => t.status === st);
-    if (pr) list = list.filter(t => t.priority === pr);
-    if (cat) list = list.filter(t => (t.category||'').toLowerCase().includes(cat));
-    if (tags) list = list.filter(t => (t.tags||[]).join(' ').toLowerCase().includes(tags));
+  const payload = {
+    title: titleInput.value.trim(),
+    description: descriptionInput.value.trim(),
+    status: statusInput.value,
+    priority: priorityInput.value,
+    dueDate: dueDateInput.value || null,
+    category: categoryInput.value.trim() || "general",
+    tags: tagsInput.value.trim()
+  };
 
-    const sortVal = sortSelect?.value || 'date-desc';
-    if (sortVal === 'title-asc') list.sort((a,b)=> a.title.localeCompare(b.title, undefined, {numeric:true}));
-    else if (sortVal === 'title-desc') list.sort((a,b)=> b.title.localeCompare(a.title, undefined, {numeric:true}));
-    else if (sortVal === 'priority') {
-        const order = { high: 0, medium: 1, low: 2 };
-        list.sort((a,b)=> order[a.priority||'medium'] - order[b.priority||'medium']);
+  if (!payload.title) return alert("Title is required");
+
+  const id = taskIdInput.value;
+  const url = id ? `${API_URL}/${id}` : API_URL;
+  const method = id ? "PUT" : "POST";
+
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (res.status === 401) {
+    showLoginModal();
+    return;
+  }
+  if (!res.ok) {
+    const err = await safeJson(res);
+    alert(err?.error || (typeof t === 'function' ? t('save_failed') : "Save failed"));
+    return;
+  }
+
+  resetForm();
+  await loadTasks();
+});
+
+function resetForm() {
+  taskIdInput.value = "";
+  titleInput.value = "";
+  descriptionInput.value = "";
+  statusInput.value = "pending";
+  priorityInput.value = "medium";
+  dueDateInput.value = "";
+  categoryInput.value = "general";
+  tagsInput.value = "";
+  cancelEditBtn.classList.add("d-none");
+}
+
+cancelEditBtn.addEventListener("click", resetForm);
+
+// table actions
+tableBody.addEventListener("click", async (e) => {
+  const editBtn = e.target.closest(".edit-btn");
+  const delBtn = e.target.closest(".delete-btn");
+
+  if (editBtn) {
+    const id = editBtn.dataset.id;
+    const res = await fetch(`${API_URL}/${id}`);
+    const task = await safeJson(res);
+    if (!task) return;
+
+    taskIdInput.value = task._id;
+    titleInput.value = task.title || "";
+    descriptionInput.value = task.description || "";
+    statusInput.value = task.status || "pending";
+    priorityInput.value = task.priority || "medium";
+    dueDateInput.value = task.dueDate ? new Date(task.dueDate).toISOString().slice(0,10) : "";
+    categoryInput.value = task.category || "general";
+    tagsInput.value = parseTags(task.tags).join(", ");
+
+    cancelEditBtn.classList.remove("d-none");
+    return;
+  }
+
+  if (delBtn) {
+    const id = delBtn.dataset.id;
+    if (!confirm(typeof t === 'function' ? t('delete_confirm') : "Delete this task?")) return;
+
+    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+
+    if (res.status === 401) {
+      showLoginModal();
+      return;
     }
-    else if (sortVal === 'date-asc') list.sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
-    else list.sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+    if (!res.ok) {
+      const err = await safeJson(res);
+      alert(err?.error || (typeof t === 'function' ? t('delete_failed') : "Delete failed"));
+      return;
+    }
 
-    renderTasks(list);
-}
-
-taskForm?.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const id = taskIdInput.value;
-    const payload = {
-        title: titleInput.value.trim(),
-        description: descriptionInput.value.trim(),
-        status: statusInput.value,
-        priority: priorityInput.value,
-        dueDate: dueDateInput.value || null,
-        category: categoryInput.value.trim() || 'general',
-        tags: (tagsInput.value||'').split(',').map(s=>s.trim()).filter(Boolean)
-    };
-    if(!payload.title){ alert('Title required'); return }
-    try{
-        if(id) await fetch(`${API_URL}/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        else await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        resetForm(); await loadTasks();
-    }catch(e){ console.error(e); alert('Save failed') }
+    await loadTasks();
+  }
 });
 
-tableBody?.addEventListener('click', async (e)=>{
-    const edit = e.target.closest('.edit-btn');
-    const del = e.target.closest('.delete-btn');
-    if(edit){ startEdit(edit.dataset.id); }
-    if(del){ if(confirm('Delete?')){ try{ await fetch(`${API_URL}/${del.dataset.id}`,{method:'DELETE'}); await loadTasks(); }catch(e){console.error(e); alert('Delete failed')}} }
+// filters events
+[filterSort, filterStatus, filterPriority].forEach(x => x.addEventListener("change", render));
+[filterCategory, filterTags].forEach(x => x.addEventListener("input", render));
+
+resetFiltersBtn.addEventListener("click", () => {
+  filterSort.value = "newest";
+  filterStatus.value = "";
+  filterPriority.value = "";
+  filterCategory.value = "";
+  filterTags.value = "";
+  render();
 });
 
-async function startEdit(id){ try{ const res = await fetch(`${API_URL}/${id}`); const t = await res.json(); taskIdInput.value = t._id; titleInput.value = t.title||''; descriptionInput.value = t.description||''; statusInput.value = t.status||'pending'; priorityInput.value = t.priority||'medium'; dueDateInput.value = t.dueDate||''; categoryInput.value = t.category||'general'; tagsInput.value = (t.tags||[]).join(', '); cancelEditBtn.style.display='inline-block'; }catch(e){console.error(e)} }
+// theme toggle (simple)
+themeToggle.addEventListener("click", () => {
+  const isDark = document.body.classList.toggle('theme-dark');
+  const newTheme = isDark ? 'dark' : 'light';
+  localStorage.setItem('theme', newTheme);
+  updateThemeIcon();
+});
 
-function resetForm(){ taskIdInput.value=''; titleInput.value=''; descriptionInput.value=''; statusInput.value='pending'; priorityInput.value='medium'; dueDateInput.value=''; categoryInput.value='general'; tagsInput.value=''; cancelEditBtn.style.display='none'; }
-cancelEditBtn?.addEventListener('click', resetForm);
+// language toggle
+langToggle.addEventListener("click", () => {
+  const cur = localStorage.getItem('lang') || 'en';
+  const next = cur === 'en' ? 'ru' : 'en';
+  if (typeof setLanguage === 'function') setLanguage(next);
+  // re-render dynamic pieces
+  render();
+});
 
-// filters
-[sortSelect, filterStatus, filterPriority, filterCategory, filterTags].forEach(el=>{ if(!el) return; el.addEventListener('change', applyFiltersAndSort); el.addEventListener('input', applyFiltersAndSort); });
-resetFiltersBtn?.addEventListener('click', ()=>{ sortSelect.value='date-desc'; filterStatus.value=''; filterPriority.value=''; filterCategory.value=''; filterTags.value=''; applyFiltersAndSort(); });
-
-// THEME + I18N helpers
-function initTheme(){ const t = localStorage.getItem('theme') || 'dark'; setTheme(t); }
-function setTheme(name){ if(name==='dark') document.body.classList.add('theme-dark'); else document.body.classList.remove('theme-dark'); localStorage.setItem('theme', name); updateThemeIcon(); }
-function toggleTheme(){ setTheme(document.body.classList.contains('theme-dark') ? 'light':'dark'); }
-function updateThemeIcon(){ const el = document.querySelector('#theme-switcher i'); if(!el) return; if(document.body.classList.contains('theme-dark')){ el.className='bi bi-sun'; } else { el.className='bi bi-moon-stars'; } }
-
-document.addEventListener('DOMContentLoaded', ()=>{ initTheme(); loadTasks(); document.getElementById('theme-switcher')?.addEventListener('click', toggleTheme); document.getElementById('lang-switcher')?.addEventListener('click', ()=>{ const next = (localStorage.getItem('lang')||'en')==='en'?'ru':'en'; setLanguage(next); }); });
-
+// init
+(async () => {
+  await checkMe();
+  await loadTasks();
+})();

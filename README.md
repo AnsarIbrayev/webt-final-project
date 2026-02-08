@@ -1,139 +1,163 @@
-# WebT Assignment 3 – Part 2  
-**Ibrayev Ansar**  
-**SE-2424**
+# Web Technologies – Assignment 4  
+# Ibrayev Ansar  
+# SE-2424
+
+---
 
 ## 1. Project Overview
 
-This project is a simple Task Manager web application.  
-It is the continuation of Assignment 3 – Part 1.
+This project is a **full-stack Task Manager web application** developed for **Assignment 4**.
 
-The goal of Part 2 is to:
+The application allows users to manage tasks through a modern web interface with:
+- authentication,
+- session-based authorization,
+- advanced task attributes,
+- filtering and sorting.
 
-- deploy the full-stack application to a production hosting platform;
-- connect the frontend UI to the backend API;
-- demonstrate full CRUD operations through a web interface;
-- use environment variables for configuration.
+The project demonstrates practical usage of backend, frontend, and database integration.
 
-The domain of the project is **task management**: the user can create, view, update, and delete tasks.
+---
 
-## 2. Technologies Used
+## 2. Features
 
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB Atlas (cloud)
-- **ORM:** Mongoose
-- **Frontend:** HTML, CSS, JavaScript (fetch API)
-- **Hosting:** Render (Web Service)
-- **Version Control:** Git, GitHub
+### Core functionality
+- User authentication (login/logout)
+- Session-based authorization
+- Create, read, update, delete tasks (CRUD)
+- Tasks stored in MongoDB
+- Protected routes for editing and deleting tasks
 
-## 3. Project Structure
+### Task attributes
+- Title
+- Description
+- Status (Pending / In Progress / Done)
+- Priority (Low / Medium / High)
+- Due date
+- Category
+- Tags
 
-Main folders and files:
+### UI & UX
+- Modern responsive dark-themed interface
+- Filters by status, priority, category, tags
+- Sorting (newest first)
+- Edit tasks directly from the list
+- Modal login window
 
-- `app.js` – main Express server file (routes, middleware, server start)
-- `database/mongo.js` – MongoDB connection using `MONGO_URI`
-- `routes/tasks.js` – REST API routes for Task CRUD
-- `views/home.html` – main UI (Task Manager)
-- `views/about.html`, `views/contact.html`, `views/404.html` – additional pages
-- `public/script.js` – frontend logic (fetch requests, DOM updates)
-- `public/styles.css` – basic styles
-- `.env` (local only, not in GitHub) – environment variables
-- `package.json` – dependencies and npm scripts
+---
 
-## 4. Environment Variables
+## 3. Technologies Used
 
-The application uses environment variables for configuration.
+### Backend
+- Node.js
+- Express.js
+- Express-session
+- MongoDB
+- Mongoose
 
-Required variables:
+### Frontend
+- HTML5
+- CSS3
+- JavaScript (Fetch API)
+- Bootstrap (UI components)
 
-- `PORT` – server port (locally usually `3000`)
-- `MONGO_URI` – MongoDB connection string (MongoDB Atlas)
+### Other
+- dotenv
+- Nodemon
+- Git & GitHub
 
-### Local development
+---
 
-Create a `.env` file in the project root:
+## 4. Project Structure
 
-```env
-PORT=3000
-MONGO_URI=<your MongoDB Atlas connection string>
-.env is ignored by Git with .gitignore.
+WebT Ass4/
+│── app.js
+│── package.json
+│── .env.example
+│
+├── database/
+│ └── mongo.js
+│
+├── models/
+│ └── User.js
+│
+├── middleware/
+│ └── requireAuth.js
+│
+├── routes/
+│ ├── auth.js
+│ └── tasks.js
+│
+├── public/
+│ ├── styles.css
+│ ├── theme.css
+│ ├── script.js
+│ └── i18n.js
+│
+└── views/
+├── home.html
+├── about.html
+├── contact.html
+└── 404.html
 
-Production (Render)
-On Render, MONGO_URI is set in Environment Variables.
-PORT is provided automatically by Render and read via process.env.PORT.
 
-5. Running the Project Locally
-Clone the repository:
+---
 
-git clone https://github.com/AnsarIbrayev/WebT-Ass3-Part2-Ibrayev-Ansar.git
-cd WebT-Ass3-Part2-Ibrayev-Ansar/WebT\ Ass3\ Part2
-Install dependencies:
+## 5. Environment Setup
 
+1. Install dependencies:
+```bash
 npm install
-Create .env with PORT and MONGO_URI.
+Create .env file based on .env.example
 
-Start the server:
+Start the application:
 
-npm start
-Open the browser at:
+npm run dev
+Open in browser:
 
 http://localhost:3000
-The Task Manager UI should be available at the root URL (/).
+6. Authentication
+Default admin account (created via seed script):
 
-6. Deployed Application (Production)
-The application is deployed on Render as a Web Service.
+Email: admin@example.com
+Password: admin123
+Only authenticated users can:
 
-Public URL:
-https://webt-ass3-part2-ibrayev-ansar.onrender.com
+edit tasks
 
-This URL is used during the defense to demonstrate the production version of the app.
+delete tasks
 
-7. CRUD Functionality via Web UI
-All CRUD operations are available through the web interface:
+7. API Endpoints
+Authentication
+POST /login
 
-Create:
-Use the form “Create / Update Task” and press Save task.
+POST /logout
 
-Read:
-All tasks are loaded from the backend (GET /api/tasks) and displayed in a table.
+Tasks
+GET /api/tasks
 
-Update:
-Click Edit next to a task. The form is filled with task data.
-Change fields and press Save task to update (PUT /api/tasks/:id).
+GET /api/tasks/:id
 
-Delete:
-Click Delete to remove a task (DELETE /api/tasks/:id).
+POST /api/tasks
 
-No Postman is required during the defense. All operations are shown in the browser.
+PUT /api/tasks/:id (protected)
 
-8. Difference Between Local and Production Environments
-Local:
+DELETE /api/tasks/:id (protected)
 
-Runs on http://localhost:3000
+8. Assignment Requirements Coverage
+✔ Full-stack application
+✔ Web UI CRUD
+✔ MongoDB database
+✔ Environment variables
+✔ Authentication & authorization
+✔ GitHub repository with README
 
-Uses .env file for PORT and MONGO_URI
+9. Conclusion
+This project fulfills all Assignment 4 requirements and demonstrates:
 
-Useful for development and debugging
+backend logic,
 
-Production (Render):
+frontend interaction,
 
-Runs on a public URL
+database integration,
 
-Uses Render environment variables for MONGO_URI
-
-Uses process.env.PORT provided by Render
-
-Connected to the same MongoDB Atlas cluster
-
-9. How to Use This Project in Defense
-During the defense, the student will:
-
-Open the deployed URL in the browser.
-
-Demonstrate all CRUD operations from the UI.
-
-Explain the backend API endpoints and data flow.
-
-Explain the MongoDB usage and environment variables.
-
-Describe deployment steps to Render.
-
+and user authentication in a real-world web application.

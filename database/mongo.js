@@ -1,20 +1,17 @@
-// database/mongo.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const connectDB = async () => {
-  const uri = process.env.MONGO_URI;
-
-  if (!uri) {
-    throw new Error('MONGO_URI is not defined in environment variables');
-  }
-
+async function connectDB() {
   try {
-    await mongoose.connect(uri);
-    console.log('MongoDB connected');
+    if (!process.env.MONGO_URI) {
+      console.log("MongoDB skipped (no URI)");
+      return;
+    }
+
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB connected");
   } catch (err) {
-    console.error('MongoDB connection error:', err);
-    throw err;
+    console.log("MongoDB not available, running without DB");
   }
-};
+}
 
 module.exports = { connectDB, mongoose };
