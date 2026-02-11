@@ -11,19 +11,24 @@ const tasksRouter = require("./routes/tasks");
 
 const app = express();
 
+// IMPORTANT for Render / proxies (fixes secure cookies / sessions)
+app.set("trust proxy", 1);
+
 // Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Sessions (secrets ONLY from env)
+// Sessions
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "dev_secret_change_me",
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // On production (Render) set secure cookies correctly behind proxy
+      secure: process.env.NODE_ENV === "production" ? "auto" : false,
       sameSite: "lax",
     },
   })
@@ -33,7 +38,7 @@ app.use(
 app.use(express.static(path.join(__dirname, "public")));
 
 // Routes
-app.use(authRoutes); // /login, /register, /logout, /me
+app.use(authRoutes); // /register, /login, /logout, /me
 app.use("/api/tasks", tasksRouter);
 
 // Pages
@@ -58,7 +63,7 @@ const PORT = process.env.PORT || 3000;
     console.log("MongoDB connected");
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);
-    // UI можно запускать даже если Mongo упал, но API будет давать ошибки
+    // UI can still run, but API will fail if DB is down
   }
 
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
