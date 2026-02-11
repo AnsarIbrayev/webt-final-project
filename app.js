@@ -3,7 +3,9 @@ require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const session = require("express-session");
-const MongoStore = require("connect-mongo");
+
+// ✅ correct import for connect-mongo (CJS + default export)
+const MongoStore = require("connect-mongo").default;
 
 const { connectDB } = require("./database/mongo");
 
@@ -12,14 +14,14 @@ const tasksRouter = require("./routes/tasks");
 
 const app = express();
 
-// Fix cookies/sessions behind Render proxy
+// Render proxy fix
 app.set("trust proxy", 1);
 
 // Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Sessions (stored in MongoDB so it works reliably on Render)
+// Sessions
 app.use(
   session({
     name: "sid",
@@ -33,9 +35,7 @@ app.use(
     }),
     cookie: {
       httpOnly: true,
-      // Render serves your app via HTTPS
       secure: process.env.NODE_ENV === "production",
-      // If you ever open API in another tab / context, None is safest
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 1000 * 60 * 60 * 24, // 1 day
     },
