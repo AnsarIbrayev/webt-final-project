@@ -1,3 +1,5 @@
+let authMode = "login"; // login | register
+
 const API_URL = "/api/tasks";
 
 const el = (id) => document.getElementById(id);
@@ -163,9 +165,22 @@ logoutBtn.addEventListener("click", async () => {
 
 // ---------- tasks ----------
 async function loadTasks() {
-  const res = await fetch(API_URL);
+  const res = await fetch(API_URL).catch(() => null);
+  if (!res) { allTasks = []; render(); return; }
+
+  if (res.status === 401) {
+    setAuthUI(false);
+    allTasks = [];
+    render();
+    return;
+  }
+
   const data = await safeJson(res);
-  allTasks = Array.isArray(data) ? data : [];
+
+  // поддержка старого/нового формата
+  if (Array.isArray(data)) allTasks = data;
+  else allTasks = Array.isArray(data?.items) ? data.items : [];
+
   render();
 }
 
@@ -382,4 +397,119 @@ langToggle.addEventListener("click", () => {
 (async () => {
   await checkMe();
   await loadTasks();
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.getElementById("toggleAuthMode");
+  const submit = document.getElementById("authSubmitBtn");
+
+  if (toggle) {
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      authMode = authMode === "login" ? "register" : "login";
+      updateAuthUI();
+    });
+  }
+
+  if (submit) {
+    submit.addEventListener("click", submitAuth);
+  }
+});
+
+// ===== Auth Mode (Login/Register) - HARD OVERRIDE =====
+(() => {
+ 
+  function updateAuthUI() {
+    const title = document.getElementById("authTitle");
+    const text = document.getElementById("authToggleText");
+    const link = document.getElementById("toggleAuthMode");
+    const btn = document.getElementById("do-login");
+
+    if (!title || !text || !link || !btn) return;
+
+    if (authMode === "login") {
+      title.textContent = "Login";
+      btn.textContent = "Login";
+      text.textContent = "No account?";
+      link.textContent = "Create account";
+    } else {
+      title.textContent = "Register";
+      btn.textContent = "Register";
+      text.textContent = "Already have an account?";
+      link.textContent = "Login";
+    }
+  }
+
+  async function submitAuth() {
+    const emailEl = document.getElementById("login-email");
+    const passEl = document.getElementById("login-password");
+    if (!emailEl || !passEl) {
+      alert("Auth inputs not found (check IDs: login-email, login-password)");
+      return;
+    }
+
+    const email = emailEl.value.trim();
+    const password = passEl.value.trim();
+    if (!email || !password) {
+      alert("Enter email and password");
+      return;
+    }
+
+    const endpoint = authMode === "login" ? "/login" : "/register";
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    }).catch(() => null);
+
+    if (!res) {
+      alert("Server error");
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.error || "Auth failed");
+      return;
+    }
+
+    // Close modal (Bootstrap)
+    const modalEl = document.getElementById("loginModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+
+    if (typeof loadTasks === "function") loadTasks();
+    if (typeof checkAuth === "function") checkAuth(); // если у тебя есть такая функция
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // 1) Toggle: клонируем ссылку, чтобы удалить старые обработчики (если были)
+    const oldToggle = document.getElementById("toggleAuthMode");
+    if (oldToggle) {
+      const newToggle = oldToggle.cloneNode(true);
+      oldToggle.parentNode.replaceChild(newToggle, oldToggle);
+
+      newToggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        authMode = authMode === "login" ? "register" : "login";
+        updateAuthUI();
+      });
+    }
+
+    // 2) Login/Register button: клонируем кнопку, чтобы удалить старые обработчики
+    const oldBtn = document.getElementById("do-login");
+    if (oldBtn) {
+      const newBtn = oldBtn.cloneNode(true);
+      oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+
+      newBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        submitAuth();
+      });
+    }
+
+    updateAuthUI();
+  });
 })();
